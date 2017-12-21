@@ -1,0 +1,19 @@
+logs
+target
+/.idea
+/.idea_modules
+/.classpath
+/.project
+/.settings
+public
+
+/RUNNING_PID
+
+/.vscode
+
+# Scala-IDE specific
+.scala_dependencies
+.project
+.settings
+.cache-main
+.cache-tests

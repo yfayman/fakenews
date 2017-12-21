@@ -1,0 +1,54 @@
+<h1 class="page-header">
+  Your Dashboard</h1>
+
+<div class="row dash-logos">
+  <div class="col-xs-6 col-sm-3 ">
+    <div class="logo-holder">
+      <a href="http://www.foxnews.com/" target="_blank">
+        <img src="/assets/fox.png" class="img-responsive" alt="Generic placeholder thumbnail">
+      </a>
+    </div>
+  </div>
+  <div class="col-xs-6 col-sm-3">
+    <div class="logo-holder">
+      <a href="http://www.cnn.com/" target="_blank">
+        <img src="/assets/cnn.png" class="img-responsive" alt="Generic placeholder thumbnail">
+      </a>
+    </div>
+  </div>
+  <div class="col-xs-6 col-sm-3">
+    <div class="logo-holder">
+      <a href="http://www.breitbart.com/" target="_blank">
+        <img src="/assets/breitbart.png" class="img-responsive" alt="Generic placeholder thumbnail">
+      </a>
+    </div>
+  </div>
+  <div class="col-xs-6 col-sm-3">
+    <div class="logo-holder">
+      <a href="https://www.infowars.com/">
+        <img src="/assets/infowars.png" class="img-responsive" alt="Generic placeholder thumbnail">
+      </a>
+    </div>
+  </div>
+</div>
+
+<div>
+  <h2 class="sub-header">Recent Articles</h2>
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th style="width:80%;">Title</th>
+          <th style="width:20%;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let article of observableArticles | async" [routerLink]="['/dashboard', 'rate',article.id]">
+          <td>{{article.title}}</td>
+          <td>{{ArticleStatus[article.status]}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div *ngIf="isLoading" class="loading-gif"></div>

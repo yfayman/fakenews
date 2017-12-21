@@ -1,0 +1,22 @@
+<div *ngIf="article != null">
+  <h2 class="sub-header">{{article.title}}</h2>
+  <div class="">
+    {{article.shortDescription}}
+  </div>
+  <div class="actions">
+    <div class="container">
+        <div class="row">
+          <div class="col-md-offset-5 col-md-2">
+            <button type="button" class="btn btn-lg btn-success" (click)="articleReal()">Real</button>
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-lg btn-warning" (click)="articleFake()">Fake</button>
+          </div>
+        </div>
+      </div>
+  </div>
+
+</div>
+<div *ngIf="article == null" class="loading-gif">
+
+</div>

@@ -1,0 +1,16 @@
+GET     /                              com.acadaca.fakenews.controllers.IndexController.index
+GET     /app/article/:id               com.acadaca.fakenews.controllers.ArticleController.show(id)
+GET     /app/article/                  com.acadaca.fakenews.controllers.ArticleController.index
+POST    /app/article/                  com.acadaca.fakenews.controllers.ArticleController.process
+
+GET     /app/articleByUrl/:url         com.acadaca.fakenews.controllers.ArticleController.articleByUrl(url:String)
+PATCH   /app/articleUpdateStatus/:id   com.acadaca.fakenews.controllers.ArticleController.updateArticleStatus(id:String)
+POST    /app/article/rating/           com.acadaca.fakenews.controllers.ArticleController.rateArticle
+GET     /app/myRatings/                com.acadaca.fakenews.controllers.ArticleController.myRatedArticles
+
+POST    /app/auth/logout/              com.acadaca.fakenews.controllers.SecurityController.logout
+POST    /app/auth/login/               com.acadaca.fakenews.controllers.SecurityController.login
+POST    /app/auth/create/              com.acadaca.fakenews.controllers.SecurityController.createAccount
+POST    /app/auth/checkEmail/          com.acadaca.fakenews.controllers.SecurityController.checkEmail
+GET     /app/auth/getAcc/:token        com.acadaca.fakenews.controllers.SecurityController.getAccountByToken(token:String)
+GET     /assets/*file                  controllers.Assets.versioned(path="/public", file: Asset)

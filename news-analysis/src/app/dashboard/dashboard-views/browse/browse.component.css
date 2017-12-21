@@ -1,0 +1,4 @@
+.url-field { max-width: 600px; width: 80%;}
+#virtual-browser{width:100%; margin-top:30px; height:75vh;}
+#virtual-browser iframe{width:100%; height:100%;}
+#urlSubmit{min-width: 85px;}

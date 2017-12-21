@@ -1,0 +1,60 @@
+<!-- https://www.playframework.com/documentation/latest/SettingsLogger -->
+<configuration>
+
+  <conversionRule conversionWord="coloredLevel" converterClass="play.api.libs.logback.ColoredLevel" />
+
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>${application.home:-.}/logs/fake-news.log</file>
+    <encoder>
+      <pattern>%date{yyyy-MM-dd HH:mm:ss ZZZZ} [%level] from %logger  - %message%n%xException</pattern>
+    </encoder>
+  </appender>
+  
+  <appender name="POWER" class="ch.qos.logback.core.FileAppender">
+    <file>${application.home:-.}/logs/performance.log</file>
+    <encoder>
+      <pattern>%date{yyyy-MM-dd HH:mm:ss ZZZZ} [%level] from %logger  - %message%n%xException</pattern>
+    </encoder>
+  </appender>
+
+
+  <appender name="METRICS" class="ch.qos.logback.core.FileAppender">
+    <file>${application.home:-.}/logs/metrics.log</file>
+    <encoder>
+      <pattern>%date [%level] from %logger in %thread - %message%n%xException</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%coloredLevel %logger{15} - %message%n%xException{10}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="ASYNCFILE" class="ch.qos.logback.classic.AsyncAppender">
+    <appender-ref ref="FILE" />
+  </appender>
+
+  <appender name="ASYNCSTDOUT" class="ch.qos.logback.classic.AsyncAppender">
+    <appender-ref ref="STDOUT" />
+  </appender>
+
+  <logger name="play" level="INFO" />
+  <logger name="application" level="DEBUG" />
+  
+  <logger name="PERFORMANCE" level="INFO" >
+  	<appender-ref ref="POWER" />>
+  </logger>
+
+  <root level="INFO">
+    <appender-ref ref="ASYNCFILE" />
+    <appender-ref ref="ASYNCSTDOUT" />
+  </root>
+  
+  <logger name="slick.jdbc.JdbcBackend.statement"  level="DEBUG" /> 
+  
+  <logger name=" slick.backend.DatabaseComponent.action"  level="DEBUG" /> 
+  
+ 
+
+</configuration>
