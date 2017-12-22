@@ -42,31 +42,7 @@ class ArticleServiceImpl(articleDao: ArticleDao, securityDao: SecurityDao, artic
     getArticleByUrl(url).flatMap { articleOption =>
       articleOption match {
         case Some(commonArticle) => Future.successful(Some(commonArticle))
-        case None =>
-          {
-            val insertResult = for {
-              scrappedDataOpt <- getHtmlByUrl(url)
-              result <- if (scrappedDataOpt.isDefined) {
-                val scrappedData = scrappedDataOpt.get
-                insertArticle(CommonCreateArticleRequest(url, scrappedDataOpt.get.title, scrappedData.html, scrappedData.shortDescription, userId))
-              } else
-                Future.successful(CommonCreateArticleResponse(None, false, Some(ArticleServiceError.BAD_DATA)))
-            } yield (scrappedDataOpt, result)
-
-            insertResult.map(scrapsAndResponse => {
-              scrapsAndResponse match {
-                case (Some(scrappedData), CommonCreateArticleResponse(Some(id), true, None)) =>
-                  Some(CommonArticle(id, 
-                                     scrappedData.url, 
-                                     scrappedData.title, 
-                                     scrappedData.html, 
-                                     scrappedData.shortDescription, 
-                                     userId, 
-                                     ArticleStatusEnum.PENDING))
-                case _ => None
-              }
-            })
-          }
+        case None => scrapAndInsert(url,userId)
       }
     }
   }
@@ -104,6 +80,32 @@ class ArticleServiceImpl(articleDao: ArticleDao, securityDao: SecurityDao, artic
                   ad.shortDescription, 
                   ad.userId, 
                   status)
+  }
+  
+  private def scrapAndInsert(url: String, userId: Option[Int]): Future[Option[CommonArticle]] = {
+    val insertResult = 
+        for {
+        scrappedDataOpt <- getHtmlByUrl(url)
+        result <- if (scrappedDataOpt.isDefined) {
+          val scrappedData = scrappedDataOpt.get
+          insertArticle(CommonCreateArticleRequest(url, scrappedDataOpt.get.title, scrappedData.html, scrappedData.shortDescription, userId))
+        } else
+          Future.successful(CommonCreateArticleResponse(None, false, Some(ArticleServiceError.BAD_DATA)))
+      } yield (scrappedDataOpt, result)
+
+      insertResult.map(scrapsAndResponse => {
+        scrapsAndResponse match {
+          case (Some(scrappedData), CommonCreateArticleResponse(Some(id), true, None)) =>
+            Some(CommonArticle(id, 
+                               scrappedData.url, 
+                               scrappedData.title, 
+                               scrappedData.html, 
+                               scrappedData.shortDescription, 
+                               userId, 
+                               ArticleStatusEnum.PENDING))
+          case _ => None
+        }
+      })
   }
 
 }
