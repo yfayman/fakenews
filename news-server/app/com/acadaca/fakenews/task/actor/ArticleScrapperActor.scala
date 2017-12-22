@@ -24,7 +24,12 @@ class ArticleScrapperActor(scrapper:ArticleScrapper) extends Actor with ActorLog
   def receive = {
     case ScrapeUrl(url) => {
       scrapper.getArticle(url).onComplete( _ match {
-        case Success(opt) => if(opt.isDefined) context.parent ! ReceiveScrappedData(opt.get)
+        case Success(scrapOpt) => {
+          scrapOpt match{
+            case Some(scrap) => context.parent ! ReceiveScrappedData(scrap)
+            case None =>
+          }
+        }
         case Failure(e) =>
       })
     }

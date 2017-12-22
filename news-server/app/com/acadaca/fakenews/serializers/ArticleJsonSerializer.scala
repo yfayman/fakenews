@@ -16,17 +16,17 @@ object ArticleJsonSerializer {
   implicit val articleResponseWrites = new Writes[ArticleResponse] {
     def writes(ar: ArticleResponse): JsValue =
       Json.obj("articleId" -> ar.id,
-        "url" -> ar.url,
-        "html" -> ar.html,
-        "shortDescription" -> ar.shortDescription,
-        "title" -> ar.title,
-        "status" -> ar.status)
+              "url" -> ar.url,
+              "html" -> ar.html,
+              "shortDescription" -> ar.shortDescription,
+              "title" -> ar.title,
+              "status" -> ar.status)
   }
 
   implicit val commonArticleRatingWrites = new Writes[CommonArticleRating] {
     def writes(car: CommonArticleRating): JsValue =
       Json.obj("articleId" -> car.articleId,
-        "rating" -> car.rating.toString())
+               "rating" -> car.rating.toString())
   }
 
   implicit val myArticleRatingsResponseWrites = new Writes[MyArticleRatingsResponse] {
@@ -63,11 +63,14 @@ object ArticleJsonSerializer {
         }
       }
 
-      json.result.validate[String].map { s => parse(s) }.flatMap { opt =>
-        {
-          if (opt.isDefined) JsSuccess(opt.get) else JsError("No a valid status")
-        }
-      }
+     json.result.validate[String]
+                 .map(s => parse(s))
+                 .flatMap { articleStatusOpt =>
+                   articleStatusOpt match{
+                     case Some(as) => JsSuccess(as)
+                     case None => JsError("Not a valid status")
+                   }
+                 }
     }
   }
 
@@ -82,11 +85,15 @@ object ArticleJsonSerializer {
         }
       }
 
-      json.result.validate[String].map { s => parse(s) }.flatMap { opt =>
-        {
-          if (opt.isDefined) JsSuccess(opt.get) else JsError("No a valid rating")
-        }
-      }
+      json.result.validate[String]
+                  .map { s => parse(s) }
+                  .flatMap { ratingOpt =>
+                    ratingOpt match {
+                      case Some(r) => JsSuccess(r)
+                      case None => JsError("No a valid rating")
+                    }
+        
+                  }
     }
   }
 

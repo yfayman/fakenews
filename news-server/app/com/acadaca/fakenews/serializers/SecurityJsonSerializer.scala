@@ -70,9 +70,9 @@ object SecurityJsonSerializer {
 
   implicit val checkEmailRequestReads = new Reads[CheckEmailRequest] {
     def reads(json: JsValue): JsResult[CheckEmailRequest] = {
-      val t = json.\("email")
-      val v = t.validate[String](email)
-      v map { s => CheckEmailRequest(s) }
+      val emailResult = json.\("email")
+      emailResult.validate[String](email)
+                  .map { email => CheckEmailRequest(email) }
     }
   }
   

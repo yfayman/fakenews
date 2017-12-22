@@ -18,22 +18,31 @@ class UsesExistsDeadboltHandler(securityService: SecurityService) extends Deadbo
 
   override def beforeAuthCheck[A](request: Request[A]): Future[Option[Result]] = {
     logger.info("Before auth check on UsesExistsDeadboltHandler")
-    Future { None }
+    Future.successful(None)
   }
 
   override def getDynamicResourceHandler[A](request: Request[A]): Future[Option[DynamicResourceHandler]] = {
     logger.info("getDynamicResourceHandler on MyDeadboltHandler")
-    Future { None }
+    Future.successful(None)
   }
 
   override def getSubject[A](request: AuthenticatedRequest[A]): Future[Option[Subject]] = {
     logger.info("Getting subject")
-    val tokenOpt = request.headers.get("authToken")
-    if (tokenOpt.isDefined) {
-      securityService.getAccountInfoByToken(tokenOpt.get).map { gair => gair.account }
-        .andThen { case Success(r) => if (r.isDefined && shouldRenew(r.get)) securityService.renewAuth(CommonRenewAuthAccountRequest(r.get)) }
-    } else {
-      Future.successful(None)
+   request.headers.get("authToken")
+     match {
+      case Some(token)=> {
+             securityService.getAccountInfoByToken(token)
+                             .map { accountInfoRes => accountInfoRes.account }
+                             .andThen { 
+                                case Success(accountOpt) =>  {
+                                  accountOpt match {
+                                    case Some(acc) if shouldRenew(acc) =>  securityService.renewAuth(CommonRenewAuthAccountRequest(acc))
+                                    case  None => // Do nothing
+                                  }
+                                }
+                              }
+      }
+      case None => Future.successful(None)
     }
   }
   override def onAuthFailure[A](request: AuthenticatedRequest[A]): Future[Result] = {
@@ -42,7 +51,10 @@ class UsesExistsDeadboltHandler(securityService: SecurityService) extends Deadbo
   }
 
   // if the token expires in 20 minutes, renew it to 30 minutes
-  private def shouldRenew(ca: CommonAccount): Boolean =
-    ca.tokenExp.isDefined && ca.tokenExp.get - System.currentTimeMillis() > (20 * 60 * 1000)
+  private def shouldRenew (ca: CommonAccount): Boolean =
+    ca.tokenExp match {
+        case Some(exp) => exp - System.currentTimeMillis() > (20 * 60 * 1000)
+        case None => false
+    }
 
 }

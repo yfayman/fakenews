@@ -32,22 +32,20 @@ class SecurityController(service: SecurityService, deadbolt: DeadboltActions) ex
 
   def login = deadbolt.SubjectNotPresent()(BodyParsers.parse.json) { request =>
 
-    val loginRequest = request.body.validate[Login]
-    loginRequest.fold(
+    request.body.validate[Login].fold(
       errors => {
         logger.info("Login data failed to bind")
         Future.successful(BadRequest(JsError.toJson(errors)))
       },
       success => {
         logger.info(s"user ${success.email} has tried to log in")
-        val loginResponse = service.login(success.email, success.password)
-        loginResponse.map { loginResponse => if (loginResponse.success) Ok(Json.toJson(loginResponse)) else Unauthorized }
+        service.login(success.email, success.password)
+           .map { loginResponse => if (loginResponse.success) Ok(Json.toJson(loginResponse)) else Unauthorized }
       })
   }
 
   def createAccount = deadbolt.SubjectNotPresent()(BodyParsers.parse.json) { request =>
-    val createAccountRequest = request.body.validate[CreateAccount]
-    createAccountRequest.fold(
+    request.body.validate[CreateAccount].fold(
       errors => {
         logger.info("Login data failed to bind")
         Future.successful(BadRequest(JsError.toJson(errors)))
@@ -67,25 +65,23 @@ class SecurityController(service: SecurityService, deadbolt: DeadboltActions) ex
   }
 
   def checkEmail = Action.async(BodyParsers.parse.json) { request =>
-    val checkEmailRequest = request.body.validate[CheckEmailRequest]
-
-    checkEmailRequest match {
-      case s: JsSuccess[CheckEmailRequest] => {
-        service.checkEmail(s.value.email).map { ccer =>
-         Ok(Json.toJson(CheckEmailResponse(ccer.emailTaken)))
+    request.body.validate[CheckEmailRequest].fold(
+        errors => {
+          Future.successful(BadRequest(JsError.toJson(errors)))
+        }, 
+        success => {
+          service.checkEmail(success.email)
+            .map { ccer =>
+              Ok(Json.toJson(CheckEmailResponse(ccer.emailTaken)))
+            }    
         }
-      }
-      case e: JsError => Future.successful(BadRequest(JsError.toJson(e)))
-    }
+     )
   }
 
   def getAccountByToken(token: String) = Action.async {
-    request =>
-      {
-        val user = service.getAccountInfoByToken(token)
-        user.map { userInfo => Ok(Json.toJson(userInfo)) }
-      }
-
+    request => { service.getAccountInfoByToken(token)
+                    .map { userInfo => Ok(Json.toJson(userInfo)) }
+    }
   }
 
 }

@@ -16,9 +16,10 @@ class WebRequestRssFetcher(url: String) extends RssFetcher with AkkaExecutionCon
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
     val wsClient = AhcWSClient()
-    wsClient.url(url).get().map(_.body).
-      map(bodyString => XML.loadString(bodyString))
-      .andThen { case _ => { wsClient.close(); system.terminate() } }
+    wsClient.url(url).get()
+                 .map(_.body)
+                 .map(bodyString => XML.loadString(bodyString))
+                 .andThen { case _ => { wsClient.close(); system.terminate() } }
   }
 
 }

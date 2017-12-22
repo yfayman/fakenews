@@ -57,15 +57,15 @@ class ArticleDaoSlickImpl(lifecycle: ApplicationLifecycle) extends ArticleDao {
       article <- articles if article.articleId === id
       articleStatus <- articleStati if article.articleStatusId === articleStatus.articleStatusId
     } yield (article.articleId,
-      article.articleUrl,
-      article.articleHtml,
-      article.shortDescription,
-      articleStatus.refCode,
-      article.userId,
-      article.title)
+            article.articleUrl,
+            article.articleHtml,
+            article.shortDescription,
+            articleStatus.refCode,
+            article.userId,
+            article.title)
 
-    val resultFuture = db.run(articleWithStatusAction.result.headOption)
-    resultFuture.map(articleOption => articleOption.map(article => mapDbResponseToArticleData(article)))
+    db.run(articleWithStatusAction.result.headOption)
+      .map(articleOption => articleOption.map(article => mapDbResponseToArticleData(article)))
   }
 
   def getArticleByUrl(url: String): Future[Option[ArticleData]] = {
@@ -73,16 +73,15 @@ class ArticleDaoSlickImpl(lifecycle: ApplicationLifecycle) extends ArticleDao {
       article <- articles if article.articleUrl === url
       articleStatus <- articleStati if article.articleStatusId === articleStatus.articleStatusId
     } yield (article.articleId,
-      article.articleUrl,
-      article.articleHtml,
-      article.shortDescription,
-      articleStatus.refCode,
-      article.userId,
-      article.title)
+            article.articleUrl,
+            article.articleHtml,
+            article.shortDescription,
+            articleStatus.refCode,
+            article.userId,
+            article.title)
 
-    val resultFuture = db.run(articleWithStatusAction.result.headOption)
-
-    resultFuture.map(articleOption => articleOption.map(article => mapDbResponseToArticleData(article)))
+    db.run(articleWithStatusAction.result.headOption)
+    .map(articleOption => articleOption.map(article => mapDbResponseToArticleData(article)))
   }
 
   def createArticle(car: CommonCreateArticleRequest): Future[Try[Int]] = {
@@ -100,8 +99,16 @@ class ArticleDaoSlickImpl(lifecycle: ApplicationLifecycle) extends ArticleDao {
     val query = sql"SELECT #$queryCols #$queryFrom #$queryWhere"
 
     val action = query.as[(Int, String, String, String, String)]
-    val result = db.run(action)
-    result.map(v => v.toList).map(li => li.map(tup => ArticleData(tup._1, tup._2, tup._3, tup._5, tup._4, "ACTIVE", None)))
+    db.run(action).map(vec => vec.toList)
+                  .map(list => list.map(queryResult => ArticleData(queryResult._1,
+                                                                    queryResult._2, 
+                                                                    queryResult._3, 
+                                                                    queryResult._5, 
+                                                                    queryResult._4, 
+                                                                    "ACTIVE", 
+                                                                    None)
+                                        )
+               )
   }
 
   def updateArticleStatus(request: CommonArticleUpdateStatusRequest): Future[Boolean] = {
@@ -111,9 +118,8 @@ class ArticleDaoSlickImpl(lifecycle: ApplicationLifecycle) extends ArticleDao {
       case ArticleStatusEnum.DELETED => articleDeletedStatusId
       case _                         => articlePendingStatusId
     }
-    val articleUpdateStatusAction = updateStatus.update(newStatusId)
-    val tryFuture = db.run(articleUpdateStatusAction.asTry)
-    tryFuture.map { qTry => qTry.isSuccess }
+     db.run(updateStatus.update(newStatusId).asTry)
+        .map { updateTry => updateTry.isSuccess }
   }
 
   def rateArticle(request: CommonArticleRateRequest): Future[Try[Int]] = {
@@ -121,7 +127,8 @@ class ArticleDaoSlickImpl(lifecycle: ApplicationLifecycle) extends ArticleDao {
       case ArticleRatingEnum.FAKE => fakeRatingId
       case ArticleRatingEnum.REAL => realRatingId
     }
-    val articleRateAction = userArticleRatings.returning(userArticleRatings.map { _.userArticleRatingId }) += Tables.UserArticleRatingRow(-1, request.userId, request.articleId, ratingId)
+    val articleRateAction = userArticleRatings.returning(userArticleRatings.map { _.userArticleRatingId }) += 
+      Tables.UserArticleRatingRow(-1, request.userId, request.articleId, ratingId)
     db.run(articleRateAction.asTry)
   }
 
@@ -142,13 +149,13 @@ class ArticleDaoSlickImpl(lifecycle: ApplicationLifecycle) extends ArticleDao {
 
   private def getFutureArticleStatusIdByRefCode(refCode: String): Future[Int] = {
     val idQuery = articleStati.filter { articleStatus => articleStatus.refCode === refCode }
-      .map { articleStatus => articleStatus.articleStatusId }
+                              .map { articleStatus => articleStatus.articleStatusId }
     db.run(idQuery.result.head)
   }
 
   private def getFutureArticleRatingIdByRefCode(refCode: String): Future[Int] = {
     val idQuery = articleRatings.filter { articleRating => articleRating.refCode === refCode }
-      .map { articleRating => articleRating.articleRatingId }
+                                .map { articleRating => articleRating.articleRatingId }
     db.run(idQuery.result.head)
   }
 

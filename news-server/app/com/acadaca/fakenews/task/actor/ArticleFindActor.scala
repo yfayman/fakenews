@@ -18,12 +18,12 @@ class ArticleFindActor(finder: ArticleFinder) extends Actor with ActorLogging wi
   
   def receive = {
     case SearchForArticles() => {
-      val articleUrlsFuture = finder.find()
-      articleUrlsFuture.onComplete(_ match {
-        case Success(urls)  => context.parent ! ReceiveUrls(urls)
-        case Failure(error) => {}
-      })
-    }
+     finder.find()
+            .onComplete(_ match {
+              case Success(urls)  => context.parent ! ReceiveUrls(urls)
+              case Failure(error) => {}
+            })
+     }
      case _ => log.warning("Received unknown message")
   }
 

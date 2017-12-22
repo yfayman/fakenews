@@ -39,7 +39,11 @@ class JsoupScrapper extends ArticleScrapper {
    * @returns Document if it exists
    */
   private def getDocument(url: String): Future[Option[Document]] = {
-    Future { Try { jsoupBrowser.get(url) } }.map { tr => tr.toOption.filter { doc => !isEmpty(doc) } }
+    Future { Try { jsoupBrowser.get(url) } }
+      .collect({
+        case Success(doc) => Some(doc)
+        case Failure(e) => None
+      })
   }
 
   /**
@@ -67,7 +71,7 @@ class JsoupScrapper extends ArticleScrapper {
 
   /**
    * Since Jsoup always returns a document, we qualify a document as
-   * valid based on this method
+   * valid based on this method(currently just looking to see if there is a title
    */
   private def isEmpty(doc: Document): Boolean = {
     doc.title.isEmpty()
@@ -81,10 +85,9 @@ class JsoupScrapper extends ArticleScrapper {
     val possibleDescriptions = rootEl >?> elementList("h2,p")
     possibleDescriptions.flatMap { pd =>
       pd.find(el =>
-        {
-          (el.tagName == "h2" && el.text.length() > headerDescriptionCutoff) ||
-            (el.tagName == "p" && el.text.length() > paragraphDescriptionCutoff)
-        })
+          (el.tagName == "h2" && el.text.length() > headerDescriptionCutoff) 
+          || (el.tagName == "p" && el.text.length() > paragraphDescriptionCutoff)
+       )
     }
   }
 }

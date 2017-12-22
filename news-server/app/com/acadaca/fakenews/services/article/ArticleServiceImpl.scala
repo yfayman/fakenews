@@ -53,10 +53,16 @@ class ArticleServiceImpl(articleDao: ArticleDao, securityDao: SecurityDao, artic
                 Future.successful(CommonCreateArticleResponse(None, false, Some(ArticleServiceError.BAD_DATA)))
             } yield (scrappedDataOpt, result)
 
-            insertResult.map(tup => {
-              tup match {
+            insertResult.map(scrapsAndResponse => {
+              scrapsAndResponse match {
                 case (Some(scrappedData), CommonCreateArticleResponse(Some(id), true, None)) =>
-                  Some(CommonArticle(id, scrappedData.url, scrappedData.title, scrappedData.html, scrappedData.shortDescription, userId, ArticleStatusEnum.PENDING))
+                  Some(CommonArticle(id, 
+                                     scrappedData.url, 
+                                     scrappedData.title, 
+                                     scrappedData.html, 
+                                     scrappedData.shortDescription, 
+                                     userId, 
+                                     ArticleStatusEnum.PENDING))
                 case _ => None
               }
             })
@@ -66,22 +72,24 @@ class ArticleServiceImpl(articleDao: ArticleDao, securityDao: SecurityDao, artic
   }
 
   def updateArticleStatus(request: CommonArticleUpdateStatusRequest): Future[CommonArticleUpdateStatusResponse] = {
-    articleDao.updateArticleStatus(request).map { success => CommonArticleUpdateStatusResponse(success) }
+    articleDao.updateArticleStatus(request)
+              .map { success => CommonArticleUpdateStatusResponse(success) }
   }
 
   def getRecentArticles(request: CommonGetArticlesRequest): Future[List[CommonArticle]] = {
-    val articleDatas = articleDao.getRecentArticles(request)
-    articleDatas.map { list =>
-      list.map { ad => convertArticleDataToArticle(ad) }
+    articleDao.getRecentArticles(request)
+              .map { articles => articles.map { articleData => convertArticleDataToArticle(articleData) }
     }
   }
 
   def rateArticle(request: CommonArticleRateRequest): Future[CommonArticleRateResponse] = {
-    articleDao.rateArticle(request).map { tr => CommonArticleRateResponse(tr.isSuccess) }
+    articleDao.rateArticle(request)
+              .map { tr => CommonArticleRateResponse(tr.isSuccess) }
   }
 
   def getArticlesRatedByUser(userId: String): Future[List[CommonArticleRating]] =
-    articleDao.getArticleRatingDataForUser(userId.toInt).map { list => list.map { ard => CommonArticleRating(ard.articleId, ard.rating) } }
+    articleDao.getArticleRatingDataForUser(userId.toInt)
+               .map { list => list.map { ard => CommonArticleRating(ard.articleId, ard.rating) } }
 
   def getArticleData(req: CommonArticleDataRequest): Future[List[CommonArticleData]] = {
     ???
@@ -89,7 +97,13 @@ class ArticleServiceImpl(articleDao: ArticleDao, securityDao: SecurityDao, artic
 
   private def convertArticleDataToArticle(ad: ArticleData): CommonArticle = {
     val status = ArticleStatusEnum.values.filter { as => as.toString() == ad.status }.head
-    CommonArticle(ad.id, ad.url, ad.title, ad.html, ad.shortDescription, ad.userId, status)
+    CommonArticle(ad.id,
+                  ad.url, 
+                  ad.title, 
+                  ad.html, 
+                  ad.shortDescription, 
+                  ad.userId, 
+                  status)
   }
 
 }

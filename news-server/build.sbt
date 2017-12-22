@@ -1,6 +1,6 @@
 import sbt.Keys._
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.11"
 
 
 // The Play project itself

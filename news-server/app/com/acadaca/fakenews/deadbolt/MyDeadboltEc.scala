@@ -9,7 +9,5 @@ class MyDeadboltEc extends ExecutionContextProvider with GlobalExecutionContextA
   
   private val logger = LoggerFactory.getLogger(this.getClass)
   
-  override def get(): ExecutionContext = {
-    ec
-  }
+  override def get(): ExecutionContext = ec
 }

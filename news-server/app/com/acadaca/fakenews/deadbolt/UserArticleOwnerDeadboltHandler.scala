@@ -13,31 +13,32 @@ import play.api.libs.json._
 import com.acadaca.fakenews.services.article.ArticleService
 
 /**
- * The user must have ownership of the article, which means the original submitter 
+ * The user must have ownership of the article, which means the original submitter
  * of the article
  */
 class UserArticleOwnerDeadboltHandler(articleService: ArticleService, securityService: SecurityService) extends UsesExistsDeadboltHandler(securityService) {
 
   private val logger = org.slf4j.LoggerFactory.getLogger(this.getClass)
-  
+
   override def getSubject[A](request: AuthenticatedRequest[A]): Future[Option[Subject]] = {
     logger.info("In UserArticleOwnerDeadboltHandler getSubject method")
     val json = Json.parse(request.body.toString())
 
     val articleIdOption = json.\("articleId").validate[Int].asOpt
 
-    if (articleIdOption.isDefined) {
-      val articleId = articleIdOption.get
-      logger.info(s"Looking up article $articleId")
-     for { 
-       articleOpt <- articleService.getArticleById(articleIdOption.get)
-       subjectOpt <- super.getSubject(request)
-      }yield for {
-        article <- articleOpt
-        subject <- subjectOpt if (article.userId.getOrElse(-999) == subject.identifier.toInt)
-      }yield(subject)
-    } else
-      Future.successful(None)
+    articleIdOption match {
+      case Some(articleId) => {
+        logger.info(s"Looking up article $articleId")
+        for {
+          articleOpt <- articleService.getArticleById(articleIdOption.get)
+          subjectOpt <- super.getSubject(request)
+        } yield for {
+          article <- articleOpt
+          subject <- subjectOpt if (article.userId.getOrElse(-999) == subject.identifier.toInt)
+        } yield (subject)
+      }
+      case None => Future.successful(None)
+    }
   }
 
 }

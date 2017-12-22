@@ -60,39 +60,43 @@ class SecurityDaoSlickImpl(lifecycle: ApplicationLifecycle) extends SecurityDao 
   }
 
   def checkEmail(email: String): Future[Option[Int]] = {
-    val query = users.filter { u => u.email === email }.map { u => u.userId }
+    val query = users.filter { u => u.email === email }
+                      .map { u => u.userId }
     db.run(query.result.headOption)
   }
 
   def getAccountByEmail(email: String): Future[Option[UserData]] = {
-    val result = db.run(users.filter { _.email === email }.result.headOption)
-    result.map(userOption => userOption.map(user => convertTableUserToUser(user)))
+   db.run(users.filter { _.email === email }.result.headOption)
+      .map(userOption => userOption.map(user => convertTableUserToUser(user)))
   }
 
   def saveAuthToken(id: Int, authToken: String, newExpiration: Long): Future[Boolean] = {
     val tokenInfoQuery = for { user <- users if user.userId === id } yield (user.authToken, user.authTokenExp)
     val thirtyMinFromNow = new Timestamp(newExpiration)
     val saveTokenAction = tokenInfoQuery.update((Some(authToken), Some(thirtyMinFromNow)))
-    val saveTokenResult = db.run(saveTokenAction.asTry)
-    saveTokenResult.map { tryId => tryId.isSuccess }
+    db.run(saveTokenAction.asTry)
+      .map { insertTry => insertTry.isSuccess }
   }
 
   def getAccountByAuthToken(token: String): Future[Option[UserData]] = {
     val query = users.filter { user => user.authToken === token }
-    val result = db.run(query.result.headOption)
-    result.map(accountOption => accountOption.map(user => convertTableUserToUser(user)))
+    db.run(query.result.headOption)
+      .map(accountOption => accountOption.map(user => convertTableUserToUser(user)))
   }
 
   def getAccountById(id: Int): Future[Option[UserData]] = {
     val query = users.filter { _.userId === id }
-    val accountByIdResult = db.run(query.result.headOption)
-    accountByIdResult.map(userOption => userOption.map(tableUser => convertTableUserToUser(tableUser)))
+    db.run(query.result.headOption)
+       .map(userOption => 
+           userOption.map(tableUser => convertTableUserToUser(tableUser))
+       )
   }
 
   def renewAuth(userId: Int, newExpiration: Long): Future[Boolean] = {
     val tokenExpQuery = for { user <- users if user.userId === userId } yield (user.authTokenExp)
     val action = tokenExpQuery.update(Some(new Timestamp(newExpiration)))
-    db.run(action.asTry).map { tryId => tryId.isSuccess }
+    db.run(action.asTry)
+      .map { updateTry => updateTry.isSuccess }
   }
 
   private def getUserTypeIdByRefCode(refCode: String): Future[Option[Int]] = {
@@ -102,15 +106,14 @@ class SecurityDaoSlickImpl(lifecycle: ApplicationLifecycle) extends SecurityDao 
   }
 
   private def createNewUser(email: String, username: String, password: String): Future[(Boolean, String)] = {
-    val id = users.returning(users.map { _.userId }) += Tables.UserRow(-1, userUserTypeId, email, username, password, None, None)
-    val createNewUserResult = db.run(id.asTry)
-    createNewUserResult.map {
-      tryInt =>
-        tryInt match {
-          case Success(userId) => (userId > 0, "success")
-          case Failure(error)  => (false, error.getMessage)
+    val newUserId = users.returning(users.map { _.userId }) += Tables.UserRow(-1, userUserTypeId, email, username, password, None, None)
+    db.run(newUserId.asTry)
+       .map {
+          _ match {
+              case Success(userId) => (userId > 0, "success")
+              case Failure(error)  => (false, error.getMessage)
+            }
         }
-    }
 
   }
 
@@ -119,7 +122,8 @@ class SecurityDaoSlickImpl(lifecycle: ApplicationLifecycle) extends SecurityDao 
   }
 
   private def getFutureUserTypeIdByRefCode(refCode: String): Future[Int] = {
-    val idQuery = userTypes.filter { ut => ut.refCode === refCode }.map { ut => ut.userTypeId }
+    val idQuery = userTypes.filter { ut => ut.refCode === refCode }
+                            .map { ut => ut.userTypeId }
     db.run(idQuery.result.head)
   }
 

@@ -22,8 +22,10 @@ class SecurityServiceImpl (securityDao: SecurityDao) extends SecurityService {
   private val renewAuthInterval = 30 * 60 * 1000
 
   def createAccount(username: String, password: String, email: String): Future[CommonCreateAccountResponse] = {
-    val result = securityDao.create(username, password.bcrypt, email)
-    result.map(successAndMessageTuple => CommonCreateAccountResponse(successAndMessageTuple._1, successAndMessageTuple._2))
+   securityDao.create(username, password.bcrypt, email)
+              .map(successAndMessageTuple => CommonCreateAccountResponse(successAndMessageTuple._1,
+                                                                         successAndMessageTuple._2)
+                  )
   }
 
   def checkEmail(email: String): Future[CommonCheckEmailResponse] = {
@@ -31,54 +33,59 @@ class SecurityServiceImpl (securityDao: SecurityDao) extends SecurityService {
   }
 
   def login(email: String, password: String): Future[CommonLoginResponse] = {
-    val accountResult = securityDao.getAccountByEmail(email)
-    accountResult.flatMap {
-      userOption =>
-        userOption match {
-          case Some(user) => {
-            if (password.isBcrypted(user.password)) {
-              val token = tokenGenerator.generateToken()
-              val newExpiration = java.lang.System.currentTimeMillis() + +1800000
-              val tokenSaveSuccess = securityDao.saveAuthToken(user.id, token, newExpiration) // 30 min
-
-              tokenSaveSuccess.map { tss =>
-                if (tss)
-                  CommonLoginResponse(true, Some(CommonAccount(user.id, user.username, user.email, Option(token), Option(newExpiration))))
-                else
-                  CommonLoginResponse(false, None)
-              }
-            } else {
-              Future.successful(CommonLoginResponse(false, None))
-            }
-          }
-          case None => Future.successful(CommonLoginResponse(false, None))
-        }
+    securityDao.getAccountByEmail(email)
+                .flatMap {
+                    userOption =>
+                      userOption match {
+                        case Some(user) => {
+                          if (password.isBcrypted(user.password)) {
+                            val token = tokenGenerator.generateToken()
+                            val newExpiration = java.lang.System.currentTimeMillis() + +1800000
+                            val tokenSaveSuccess = securityDao.saveAuthToken(user.id, token, newExpiration) // 30 min
+              
+                            tokenSaveSuccess.map { tss =>
+                              if (tss)
+                                CommonLoginResponse(true, Some(CommonAccount(user.id, user.username, user.email, Option(token), Option(newExpiration))))
+                              else
+                                CommonLoginResponse(false, None)
+                            }
+                          } else {
+                            Future.successful(CommonLoginResponse(false, None))
+                          }
+                        }
+                        case None => Future.successful(CommonLoginResponse(false, None))
+                      }
     }
 
   }
 
   def getAccountInfoByToken(token: String): Future[CommonGetAccountInfoResponse] = {
-    val result = securityDao.getAccountByAuthToken(token);
-    result.map { optUser =>
-      optUser match {
-        case Some(userData) =>{ 
-          val expireTime = userData.authTokenExp.map { _.getTime }
-          val commonAccount = CommonAccount(userData.id, userData.username, userData.email, userData.authToken, expireTime)
-          userData.authTokenExp match {
-          case Some(expirationDate) => {
-            if (expirationDate.getTime > java.lang.System.currentTimeMillis()) {
-              CommonGetAccountInfoResponse(Option(commonAccount), true, "token active")
-            } else {
-              CommonGetAccountInfoResponse(None, false, "token expired")
-            }
-          }
-          case None => { CommonGetAccountInfoResponse(None, false, "token expired") }
-        }}
-        case None => { CommonGetAccountInfoResponse(None, false, "Account not found") }
-      }
-    }
+    securityDao.getAccountByAuthToken(token)
+                .map {optUser =>  optUser match {
+                        case Some(userData) =>{ 
+                          val expireTime = userData.authTokenExp.map { _.getTime }
+                          val commonAccount = CommonAccount(userData.id, 
+                                                           userData.username, 
+                                                           userData.email, 
+                                                           userData.authToken, 
+                                                           expireTime)
+                          userData.authTokenExp match {
+                              case Some(expirationDate) => {
+                                if (expirationDate.getTime > java.lang.System.currentTimeMillis()) {
+                                  CommonGetAccountInfoResponse(Option(commonAccount), true, "token active")
+                                } else {
+                                  CommonGetAccountInfoResponse(None, false, "token expired")
+                                }
+                              }
+                              case None => { CommonGetAccountInfoResponse(None, false, "token expired") }
+                            }
+                          }
+                        case None => { CommonGetAccountInfoResponse(None, false, "Account not found") }
+                      }
+                    }
   }
 
-  def renewAuth(req: CommonRenewAuthAccountRequest):Future[Boolean] = securityDao.renewAuth(req.ca.userId, System.currentTimeMillis() + renewAuthInterval)
+  def renewAuth(req: CommonRenewAuthAccountRequest):Future[Boolean] = 
+        securityDao.renewAuth(req.ca.userId, System.currentTimeMillis() + renewAuthInterval)
 
 }

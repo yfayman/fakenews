@@ -17,7 +17,6 @@ class ResponseTimeFilter (implicit val mat: Materializer, ec: ExecutionContext) 
       val requestTime = endTime - startTime
       logger.info(s"${requestHeader.method} ${requestHeader.uri} took ${requestTime}ms and returned ${result.header.status}")
       
-      
       result
     }
 
